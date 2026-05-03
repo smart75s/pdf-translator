@@ -6,7 +6,7 @@ import io
 from PIL import Image
 
 # --- الإعدادات ---
-API_KEY = "AIzaSyBKDOw4XIXMSu18WI-H6lOQEoLkjEe6X5c"
+API_KEY = "AIzaSyDZ4bC-3Kfnc-oIzmMs3hXffq7ryOoLQ4Q"
 
 st.set_page_config(page_title="المترجم الذكي المطور", page_icon="🎯")
 st.title("🎯 مترجم الطوارئ الذكي")

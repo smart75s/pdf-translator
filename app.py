@@ -8,7 +8,7 @@ from PIL import Image
 # ضع مفتاحك هنا أو الأفضل استخدامه كـ Secret في Streamlit
 API_KEY = "AIzaSyBKDOw4XIXMSu18WI-H6lOQEoLkjEe6X5c" 
 genai.configure(api_key=API_KEY)
-model = genai.GenerativeModel('gemini-pro-vision') (هذا الموديل مخصص للصور والنصوص معاً).
+model = genai.GenerativeModel('gemini-pro-vision')
 
 st.set_page_config(page_title="مترجم الـ PDF بالذكاء الاصطناعي", page_icon="🤖")
 

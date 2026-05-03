@@ -43,5 +43,5 @@ if uploaded_file:
                 st.success("تم الاتصال والترجمة بنجاح!")
                 st.text_area("النص الناتج:", full_text, height=400)
 
-            except Exception as e:
+          
               

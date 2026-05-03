@@ -1,57 +1,48 @@
 import streamlit as st
 import fitz  # PyMuPDF
-from deep_translator import GoogleTranslator
+import google.generativeai as genai
+import io
+from PIL import Image
 
-st.set_page_config(page_title="مترجم الـ PDF الاحترافي", page_icon="📄")
+# --- إعداد Gemini ---
+# ضع مفتاحك هنا أو الأفضل استخدامه كـ Secret في Streamlit
+API_KEY = "AIzaSyBKDOw4XIXMSu18WI-H6lOQEoLkjEe6X5c" 
+genai.configure(api_key=API_KEY)
+model = genai.GenerativeModel('gemini-1.5-flash')
 
-st.title("📄 مترجم ملفات PDF الذكي")
+st.set_page_config(page_title="مترجم الـ PDF بالذكاء الاصطناعي", page_icon="🤖")
 
-# إعدادات اللغة
-col1, col2 = st.columns(2)
-with col1:
-    source_l = st.selectbox("لغة الملف الأصلية:", ["ar", "en", "fr"])
-with col2:
-    target_l = st.selectbox("الترجمة إلى:", ["en", "ar", "fr"])
+st.title("🤖 مترجم الـ PDF الذكي (يدعم الصور والـ Scan)")
+st.write("هذه النسخة تستخدم Gemini لقراءة وترجمة أي نوع من الملفات.")
 
-uploaded_file = st.file_uploader("ارفع ملف PDF هنا", type="pdf")
+uploaded_file = st.file_uploader("ارفع ملف PDF (نصي أو صورة)", type="pdf")
 
 if uploaded_file:
-    if st.button("بدء المعالجة والترجمة"):
-        with st.spinner("جاري استخراج النصوص والترجمة..."):
+    if st.button("بدء الترجمة الاحترافية"):
+        with st.spinner("جاري تحليل الصفحات وترجمتها بواسطة Gemini..."):
             try:
-                # فتح الملف
-                file_bytes = uploaded_file.read()
-                doc = fitz.open(stream=file_bytes, filetype="pdf")
-                
-                full_translated_text = ""
-                extracted_pages = 0
+                doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
+                final_output = ""
 
-                for page in doc:
-                    # استخراج النص الخام
-                    raw_text = page.get_text().strip()
+                # معالجة أول 5 صفحات (للحفاظ على السرعة)
+                for i in range(min(len(doc), 5)):
+                    page = doc[i]
                     
-                    if raw_text:
-                        # إذا وجد نص، نقوم بترجمته
-                        try:
-                            translated = GoogleTranslator(source=source_l, target=target_l).translate(raw_text)
-                            full_translated_text += f"\n--- صفحة {page.number + 1} ---\n{translated}\n"
-                            extracted_pages += 1
-                        except Exception as e:
-                            st.warning(f"فشلت ترجمة الصفحة {page.number + 1}")
+                    # تحويل الصفحة لصورة ليراها Gemini (حل مشكلة الـ Scan)
+                    pix = page.get_pixmap()
+                    img_data = pix.tobytes("png")
+                    img = Image.open(io.BytesIO(img_data))
                     
-                if full_translated_text:
-                    st.success(f"تمت ترجمة {extracted_pages} صفحة بنجاح!")
-                    st.text_area("النص المترجم:", full_translated_text, height=300)
+                    # إرسال الصورة لـ Gemini مع أمر الترجمة
+                    prompt = "Extract all text from this image and translate it to Arabic. If it's already Arabic, translate it to English. Provide only the translation."
+                    response = model.generate_content([prompt, img])
                     
-                    st.download_button(
-                        label="📥 تحميل ملف الترجمة",
-                        data=full_translated_text.encode('utf-8'),
-                        file_name="translated_result.txt",
-                        mime="text/plain"
-                    )
-                else:
-                    st.error("⚠️ لم يتم العثور على نصوص قابلة للقراءة في هذا الملف. قد يكون الملف عبارة عن صور (Scan).")
-                    st.info("نصيحة: جرب رفع ملف PDF يحتوي على نصوص يمكنك تحديدها ونسخها بالماوس.")
+                    final_output += f"\n--- الصفحة {i+1} ---\n{response.text}\n"
+
+                st.success("تمت الترجمة بنجاح!")
+                st.text_area("النتيجة:", final_output, height=400)
+                
+                st.download_button("تحميل الترجمة", final_output.encode('utf-8'), file_name="gemini_translation.txt")
 
             except Exception as e:
-                st.error(f"حدث خطأ فني: {str(e)}")
+                st.error(f"حدث خطأ: {str(e)}")

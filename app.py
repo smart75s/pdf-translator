@@ -5,7 +5,7 @@ from PIL import Image
 import io
 
 # --- الإعدادات ---
-API_KEY = "ضـع_مفتاح_الـ_API_الخاص_بك_هنا"
+API_KEY = "AIzaSyBKDOw4XIXMSu18WI-H6lOQEoLkjEe6X5c"
 genai.configure(api_key=API_KEY)
 
 st.set_page_config(page_title="المترجم الذكي المطور", page_icon="🚀")
@@ -42,7 +42,8 @@ if uploaded_file:
 
                 st.success("تم الاتصال والترجمة بنجاح!")
                 st.text_area("النص الناتج:", full_text, height=400)
-          
+
+            
               except Exception as e:
                 st.error(f"عذراً، لا يزال هناك تعارض: {str(e)}")
                 st.info("تأكد أن مفتاح الـ API يعمل بشكل صحيح في Google AI Studio.")

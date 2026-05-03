@@ -1,52 +1,54 @@
 import streamlit as st
 import fitz
-import google.generativeai as genai
-from PIL import Image
+import requests
+import base64
 import io
+from PIL import Image
 
 # --- الإعدادات ---
-API_KEY = "AIzaSyBKDOw4XIXMSu18WI-H6lOQEoLkjEe6X5cا"
-# هذا السطر يخبر المكتبة باستخدام الإصدار المستقر فوراً
-genai.configure(api_key=API_KEY)
+API_KEY = "AIzaSyBKDOw4XIXMSu18WI-H6lOQEoLkjEe6X5c"
+URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={API_KEY}"
 
-st.set_page_config(page_title="المترجم النهائي", page_icon="✅")
-
-st.title("✅ النسخة المستقرة (حل مشكلة 404)")
+st.set_page_config(page_title="المترجم السريع", page_icon="⚡")
+st.title("⚡ المترجم المباشر (تجاوز التعليق)")
 
 uploaded_file = st.file_uploader("ارفع ملف PDF", type="pdf")
 
 if uploaded_file:
-    if st.button("بدء الترجمة"):
-        with st.spinner("جاري المعالجة بالإصدار المستقر..."):
+    if st.button("بدء الترجمة الفورية"):
+        with st.spinner("جاري الترجمة عبر الرابط المباشر..."):
             try:
-                # إجبار النظام على استخدام v1 بدلاً من v1beta
-                model = genai.GenerativeModel(
-                    model_name='gemini-1.5-flash',
-                    generation_config={"candidate_count": 1}
-                )
-
                 doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
                 full_text = ""
 
-                for i in range(min(len(doc), 3)):
+                # معالجة أول صفحتين للتأكد من السرعة
+                for i in range(min(len(doc), 2)):
                     page = doc[i]
-                    pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))
-                    img = Image.open(io.BytesIO(pix.tobytes("png")))
+                    pix = page.get_pixmap(matrix=fitz.Matrix(1.5, 1.5))
+                    img_byte_arr = io.BytesIO()
+                    Image.open(io.BytesIO(pix.tobytes("png"))).save(img_byte_arr, format='PNG')
+                    img_base64 = base64.b64encode(img_byte_arr.getvalue()).decode('utf-8')
+
+                    # إنشاء الطلب المباشر لجوجل
+                    payload = {
+                        "contents": [{
+                            "parts": [
+                                {"text": "Translate this image to Arabic accurately."},
+                                {"inline_data": {"mime_type": "image/png", "data": img_base64}}
+                            ]
+                        }]
+                    }
                     
-                    # طلب الترجمة مباشرة
-                    response = model.generate_content(["Translate this image content to Arabic", img])
-                    full_text += f"\n--- صفحة {i+1} ---\n{response.text}\n"
+                    response = requests.post(URL, json=payload)
+                    result = response.json()
+                    
+                    # استخراج النص من الرد
+                    translated_text = result['candidates'][0]['content']['parts'][0]['text']
+                    full_text += f"\n--- صفحة {i+1} ---\n{translated_text}\n"
 
                 st.success("تمت الترجمة بنجاح!")
                 st.text_area("النتيجة:", full_text, height=400)
 
             except Exception as e:
-                # إذا فشل، سنحاول بطريقة استدعاء الموديل المباشرة
-                st.error(f"خطأ في الربط: {str(e)}")
-                st.info("جاري محاولة حل بديل...")
-                # محاولة أخيرة باسم موديل بديل
-                try:
-                     model_alt = genai.GenerativeModel('models/gemini-1.5-flash')
-                     # كرر محاولة الترجمة هنا...
-                except:
-                     pass
+                st.error(f"فشل الاتصال المباشر: {str(e)}")
+                st.info("تأكد من أن مفتاح الـ API صحيح ومفعل.")

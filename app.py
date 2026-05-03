@@ -5,50 +5,51 @@ from PIL import Image
 import io
 
 # --- الإعدادات ---
-# تأكد من وضع مفتاح الـ API الخاص بك هنا بشكل صحيح
+# تأكد من وضع مفتاح الـ API الخاص بك هنا
 API_KEY = "AIzaSyBKDOw4XIXMSu18WI-H6lOQEoLkjEe6X5c"
 genai.configure(api_key=API_KEY)
 
 st.set_page_config(page_title="المترجم الذكي المطور", page_icon="🚀")
 
-st.title("🚀 المترجم الخارق (النسخة المستقرة)")
-st.info("تم إصلاح أخطاء التنسيق والربط. جاهز للعمل!")
+st.title("🚀 المترجم الاحترافي (النسخة المستقرة)")
+st.info("جاهز لترجمة ملفات الـ Scan والنصوص بدقة عالية.")
 
-uploaded_file = st.file_uploader("ارفع ملف الـ PDF (نصي أو Scan)", type="pdf")
+uploaded_file = st.file_uploader("ارفع ملف الـ PDF هنا", type="pdf")
 
 if uploaded_file:
-    if st.button("إطلاق الترجمة"):
-        with st.spinner("جاري التواصل مع عقل Gemini..."):
+    if st.button("بدء الترجمة"):
+        with st.spinner("جاري التواصل مع عقل Gemini وتحليل الصفحات..."):
             try:
-                # محاولة الوصول للموديل بالتسمية المستقرة
+                # استخدام الموديل بشكل مباشر وتجنب مشاكل الإصدارات
                 model = genai.GenerativeModel('gemini-1.5-flash')
 
-                # قراءة الملف المرفوع
-                file_content = uploaded_file.read()
-                doc = fitz.open(stream=file_content, filetype="pdf")
-                full_text = ""
+                # قراءة محتوى الملف
+                file_bytes = uploaded_file.read()
+                doc = fitz.open(stream=file_bytes, filetype="pdf")
+                full_result = ""
 
-                # ترجمة أول 3 صفحات لضمان السرعة
-                pages_to_translate = min(len(doc), 3)
+                # معالجة أول 3 صفحات (لضمان عمل التطبيق بسرعة في البداية)
+                num_pages = min(len(doc), 3)
                 
-                for i in range(pages_to_translate):
+                for i in range(num_pages):
                     page = doc[i]
-                    # تحويل الصفحة لصورة بجودة عالية
+                    # تحويل الصفحة لصورة ليراها Gemini بدقة
                     pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))
                     img = Image.open(io.BytesIO(pix.tobytes("png")))
                     
-                    # طلب الترجمة
-                    prompt = "Translate the text in this image to Arabic accurately. Maintain the context."
+                    # طلب الترجمة من Gemini
+                    prompt = "Identify the language of this document and translate all its content to Arabic. If it is already in Arabic, translate it to English. Output ONLY the translated text."
                     response = model.generate_content([prompt, img])
                     
-                    full_text += f"\n--- صفحة {i+1} ---\n{response.text}\n"
+                    full_result += f"\n--- الصفحة {i+1} ---\n{response.text}\n"
 
-                if full_text:
+                if full_result:
                     st.success("تمت الترجمة بنجاح!")
-                    st.text_area("النص الناتج:", full_text, height=400)
-                    st.download_button("تحميل الترجمة", full_text.encode('utf-8'), file_name="translated.txt")
+                    st.text_area("النص المترجم:", full_result, height=400)
+                    st.download_button("📥 تحميل النتيجة (txt)", full_result.encode('utf-8'), file_name="translated_file.txt")
                 else:
-                    st.warning("لم يتم استخراج أي نص.")
+                    st.error("لم يتمكن النظام من استخراج نص من الملف.")
 
             except Exception as e:
-                st.error(f"عذراً، حدث خطأ أثناء المعالجة: {str(e)}")
+                st.error(f"حدث خطأ فني: {str(e)}")
+                st.info("نصيحة: تأكد من صحة مفتاح API وتوافر حصة مجانية في حسابك.")

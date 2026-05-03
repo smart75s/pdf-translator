@@ -8,7 +8,7 @@ from PIL import Image
 # --- الإعدادات ---
 API_KEY = "AIzaSyBKDOw4XIXMSu18WI-H6lOQEoLkjEe6X5c"
 # استخدام الإصدار المستقر v1 لحل مشكلة 404
-URL = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={API_KEY}"
+URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key={API_KEY}"
 
 st.set_page_config(page_title="المترجم الذكي", page_icon="🎯")
 st.title("🎯 المترجم الاحترافي (الإصدار المستقر)")
